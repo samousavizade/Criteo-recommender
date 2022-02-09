@@ -10,6 +10,7 @@
 ### ساختار پایپلاین
 
 منطق این ساختار مشابه جزوه‌ی درس پیش رفته شده است:
+![](MLOps_pipeline.png)
 
 
 البته چون نتایج ما به سمت کاربر برمی‌گردد، در حقیقت دو کانتینر گذاشتیم. یکی برای تمیزکاری داده‌ها و دیگری برای آزمون/آزمایش و پروداکشن.
@@ -71,7 +72,7 @@ def send(phase: str):
 ```python
 
 @api.route('/ml', methods=['POST'])
-def analyze():
+def ml():
     phase = request.args.get('phase')
     if phase in ('dev', 'prod'):
         file_name = MODIFIED_CSV
@@ -80,7 +81,7 @@ def analyze():
     data_f = request.files.get('data_file')
     data_f.save(file_name)
     if phase == 'dev':
-        ret_val = ml()
+        ret_val = model()
     else:
         ret_val = send_to_mlflow()
     return ret_val
@@ -91,18 +92,80 @@ def analyze():
 
 این `route` داده‌های تمیز را از `preprocess` می‌گیرد. اگر در فاز `dev` باشیم آنگاه با صدا زدن تابع `ml` همان فرآیند یادگیری و بررسی دقت و `F-score` ادامه می‌دهد. اگر در فاز `prod` باشیم، آنگاه آن را به `mlflow` که بر روی یک پورت داخلی در حال اجرا است می‌فرستد.
 
-### نتیجه‌ی گرفته شده
+<div dir="ltr">
 
-```bash
-python3 request.py train_dataset.csv dev
-python3 request.py query_dataset.csv prod
+```python
+
+def send_to_mlflow():
+    host = '127.0.0.1'
+    url = f'http://{host}:{MLFLOW_PORT}/invocations'
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    test_data = pd.read_csv(MODIFIED_CSV, sep='\t')
+    http_data = test_data.to_json(orient='split')
+    r = requests.post(url=url, headers=headers, data=http_data)
+    return f'Predictions: {r.text}'
+
 ```
-با اجرای دستورات بالا، ابتدا فرآیند `dev` و سپس `prod` انجام می‌شود.
+در این قسمت یک اتصال `REST` به `mlflow` برقرا می‌شود و فایل تمیز شده جهت فاز `production` ارسال می‌شود.
+
+</div>
+
+<div dir="ltr">
+
+```python
+
+def kill_mlflow():
+    os.system('pkill mlflow')
+    os.system(f'fuser -k {MLFLOW_PORT}/tcp')
+
+```
+
+</div>
+
+با توجه به اینکه ممکن است باز هم فاز `dev` داشته باشیم، پس اگر نسخه‌ی پیشین بالا باشد با کمک این تابع آن را پایین آورده، پورت را آزاد می‌کنیم و دوباره با مدل جدید `mlflow` اجرا می‌شود.
+
+
+#### request
+
+<div dir="ltr">
+
+```python
+
+import requests
+import sys
+
+host = '127.0.0.1'
+
+port = 8050
+
+file_name, phase = str(sys.argv[1]), str(sys.argv[2])
+url = f'http://{host}:{port}/analyze?phase={phase}'
+csv_f = open(file_name, 'rb')
+r = requests.post(url=url, files={'data_file': csv_f})
+print(r.text)
+
+```
+
+</div>
+
+در ایین قسمت با دو آرگومان فایل و `phase` که می‌تواند `dev` یا `prod` باشد فایلی به `Data.py` که فاز پیش‌پرداز است فرستاده می‌شود.
+
+### پیش‌نیازهای اجرا
+
+حتما پیش از اجرا اطمینان حاصل کنید که `docker` و `docker-compose` نصب هستند.
 
 ### نحوه‌ی اجرا
 
-برای اجرای این روال کافی است کد `pipeline.sh` را اجرا کنید.
-در آن ابتدا یک شبکه به اسم `mlflow` ساخته می‌شود، سپس داکرفایل‌ها تبدیل به `image` می‌شوند و نهایتا `docker-compose` اجرا می‌گردد. 
+برای اجرا کافی است `start.sh` را اجرا کنید. در آن ابتدا با توجه به داکرفایل‌ها `image`های مربوطه ساخته می‌شوند و سپس با `docker-compose` بالا می‌آیند.
+برای متوقف ساختن هم `stop.sh` را بزنید.
 
+```bash
+
+python3 request.py ../train_dataset.csv dev
+python3 request.py query_dataset.csv prod
+```
+با اجرای دستورات بالا، ابتدا فرآیند `dev` و سپس `prod` انجام می‌شود.
 
 </div>

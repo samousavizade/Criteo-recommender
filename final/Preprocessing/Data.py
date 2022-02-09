@@ -7,7 +7,7 @@ from flask import Flask, request
 import requests
 import os
 
-MODIFIED_CSV = '_modified_dataset.csv'
+MODIFIED_CSV = 'modified_dataset.csv'
 DEV = 'dev'
 PROD = 'prod'
 DATA_CSV = 'data.csv'
@@ -48,24 +48,7 @@ def pre_process(data_f, phase: str):
         'user_id',
         'product_id',
     ]
-
-    numerical_columns, categorical_columns = get_numerical_categorical_columns(
-        df)
-
-    if phase == PROD:
-        prev_data = pd.read_csv(DATA_CSV)
-        prev_data[numerical_columns] = prev_data[numerical_columns].apply(
-            lambda col: col.replace({-1: np.nan}))
-
-        prev_data['product_price'] = prev_data['product_price'].replace({0: np.nan})
-
-        prev_data[categorical_columns] = prev_data[categorical_columns].apply(
-            lambda col: col.replace({'-1': np.nan}))
-        prev_data = prev_data.dropna(thresh=threshold)
-        prev_data_drop = to_be_dropped_cols.copy()
-        prev_data_drop.append(target_column_name)
-        prev_data.drop(prev_data_drop, axis=1, inplace=True)
-
+    numerical_columns, categorical_columns = get_numerical_categorical_columns(df)
     df[numerical_columns] = df[numerical_columns].apply(
         lambda col: col.replace({-1: np.nan}))
 
@@ -82,19 +65,40 @@ def pre_process(data_f, phase: str):
     if phase == DEV:
         df = df.dropna(thresh=threshold)
     if phase == PROD:
+        prev_data = pd.read_csv(DATA_CSV)
+        prev_data.drop([target_column_name, ], axis=1, inplace=True)
+        numerical_columns, categorical_columns = get_numerical_categorical_columns(prev_data)
+        prev_data[numerical_columns] = prev_data[numerical_columns].apply(
+            lambda col: col.replace({-1: np.nan}))
+
+        prev_data['product_price'] = prev_data['product_price'].replace({0: np.nan})
+
+        prev_data[categorical_columns] = prev_data[categorical_columns].apply(lambda col: col.replace({'-1': np.nan}))
+        prev_data = prev_data.dropna(thresh=threshold)
+        prev_data.drop(to_be_dropped_cols, axis=1, inplace=True)
+        prev_data = prev_data.dropna(thresh=threshold)
+
+    if phase == PROD:
         assert prev_data is not None
         final_df = pd.concat([prev_data, df])
     else:
         final_df = df
-    numerical_columns, categorical_columns = get_numerical_categorical_columns(final_df)
 
+    numerical_columns, categorical_columns = get_numerical_categorical_columns(final_df)
+    # final_df.iloc[:len(final_df) - query_size, :]
     for column in numerical_columns:
-        final_df.loc[final_df[column].isnull(), column] = final_df.loc[~final_df[column].isnull(),
-                                                                       column].median()
+        if phase == PROD:
+            median_val = prev_data.loc[~prev_data[column].isnull(), column].median()
+        else:
+            median_val = final_df.loc[~final_df[column].isnull(), column].median()
+        final_df.loc[final_df[column].isnull(), column] = median_val
 
     for column in categorical_columns:
-        final_df.loc[final_df[column].isnull(), column] = final_df.loc[~final_df[column].isnull(),
-                                                                       column].mode().iat[0]
+        if phase == PROD:
+            mode_val = prev_data.loc[~prev_data[column].isnull(), column].mode().iat[0]
+        else:
+            mode_val = final_df.loc[~final_df[column].isnull(), column].mode().iat[0]
+        final_df.loc[final_df[column].isnull(), column] = mode_val
 
     # Categorical Columns Encode
     for c_column in categorical_columns:
@@ -135,7 +139,7 @@ def pre_process(data_f, phase: str):
 
 
 def send(phase: str):
-    host = '127.0.0.1'
+    host = 'mlflow'
     port = 8080
     url = f'http://{host}:{port}/ml?phase={phase}'
     csv_f = open(MODIFIED_CSV, 'rb')
@@ -148,7 +152,6 @@ api = Flask(__name__)
 
 @api.route('/analyze', methods=['POST'])
 def analyze():
-    global MODIFIED_CSV
     phase = request.args.get('phase')
     if phase == DEV:
         file_name = DATA_CSV
@@ -157,7 +160,6 @@ def analyze():
         file_name = QUERY_CSV
     else:
         return "Not a valid phase"
-    MODIFIED_CSV = phase + MODIFIED_CSV
     data_f = request.files.get('data_file')
     data_f.save(file_name)
     pre_process(file_name, phase)
@@ -166,4 +168,4 @@ def analyze():
 
 
 if __name__ == '__main__':
-    api.run('127.0.0.1', 8050)
+    api.run('0.0.0.0', 8050)
