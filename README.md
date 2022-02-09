@@ -11,15 +11,18 @@ Contribution
 ============
 
 Data cleaning
-  * Amin Meghrazi +++ 
+  * Amin Meghrazi +++
   * Alireza Mousavizade +
   * Yashar Zoroofchi +
+
 Models
   * Alireza Mousavizade +++
   * Yashar Zoroofchi +
+
 Pipelining
   * Yashar Zoroofchi +++
   * Alireza Mousavizade +
+
 Report
   * Amin Meghrazi +++
   * Alireza Mousavizade ++
