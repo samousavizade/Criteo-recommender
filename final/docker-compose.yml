@@ -1,0 +1,29 @@
+version: "3.7"
+services:
+  preprocess:
+    image: preprocessing:latest
+    container_name: preprocess
+    expose:
+        - "8050"
+    ports:
+        - "8050:8050"
+    depends_on:
+        - mlflow
+    networks: 
+        - mlflow
+  mlflow:
+    build: .
+    image: mlflow:latest
+    container_name: mlflow
+    volumes:
+        - ./MLFlow:/app
+    expose:
+        - "8080"
+    ports:
+        - "8080:8080"
+    networks: 
+        - mlflow    
+networks:
+  mlflow:
+    external: false
+    name: mlflow
