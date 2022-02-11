@@ -1,0 +1,4 @@
+artifact_location: file:///home/ahura/PycharmProjects/MLProject_Model/mlruns/3
+experiment_id: '3'
+lifecycle_stage: active
+name: Extreme Deep Factorization Model

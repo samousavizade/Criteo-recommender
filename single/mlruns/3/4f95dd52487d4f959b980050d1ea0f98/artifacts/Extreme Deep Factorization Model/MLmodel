@@ -1,0 +1,14 @@
+artifact_path: Extreme Deep Factorization Model
+flavors:
+  python_function:
+    data: data
+    env: conda.yaml
+    loader_module: mlflow.pytorch
+    pickle_module_name: mlflow.pytorch.pickle_module
+    python_version: 3.8.12
+  pytorch:
+    model_data: data
+    pytorch_version: 1.10.2
+model_uuid: 29c829f188ec41f69a4ab4ad724c7dea
+run_id: 4f95dd52487d4f959b980050d1ea0f98
+utc_time_created: '2022-02-08 16:58:26.254372'

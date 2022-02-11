@@ -1,0 +1,7 @@
+mlflow==1.23.1
+mlflow_skinny==1.23.0
+pandas==0.25.3
+requests==2.25.1
+scikit_learn==1.0.2
+scikit_optimize==0.9.0
+xgboost==1.5.2

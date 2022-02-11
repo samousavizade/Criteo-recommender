@@ -1,0 +1,14 @@
+artifact_path: Wide & Deep Model
+flavors:
+  python_function:
+    data: data
+    env: conda.yaml
+    loader_module: mlflow.pytorch
+    pickle_module_name: mlflow.pytorch.pickle_module
+    python_version: 3.8.12
+  pytorch:
+    model_data: data
+    pytorch_version: 1.10.2
+model_uuid: 6b5ecc5ebf8a4b89aa12b95d78c59f6c
+run_id: 653b5a25958044979224cc50d58dd71a
+utc_time_created: '2022-02-08 17:05:36.805427'

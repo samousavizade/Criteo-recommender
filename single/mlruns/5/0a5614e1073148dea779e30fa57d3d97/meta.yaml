@@ -1,0 +1,15 @@
+artifact_uri: file:///home/ahura/PycharmProjects/MLProject_Model/mlruns/5/0a5614e1073148dea779e30fa57d3d97/artifacts
+end_time: 1644339855989
+entry_point_name: ''
+experiment_id: '5'
+lifecycle_stage: active
+name: ''
+run_id: 0a5614e1073148dea779e30fa57d3d97
+run_uuid: 0a5614e1073148dea779e30fa57d3d97
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1644339817896
+status: 3
+tags: []
+user_id: ahura
